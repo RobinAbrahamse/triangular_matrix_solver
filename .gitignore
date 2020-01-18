@@ -1,0 +1,12 @@
+cmake-build-debug/
+cmake-build-release/
+.idea/
+data/sparse_triangular_matrix.mtx
+
+# Compiled source #
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so

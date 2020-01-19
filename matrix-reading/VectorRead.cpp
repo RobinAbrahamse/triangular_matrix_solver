@@ -4,7 +4,6 @@
 
 #include <fstream>
 #include <string>
-#include <iostream>
 #include "VectorRead.h"
 
 using namespace std;
@@ -32,10 +31,9 @@ void readDense(basic_ifstream<char> &file, double* &val) {
     int n = 0;
     file >> n;
     file.ignore(2048, '\n');
-    val = new double[n+1];
+    val = new double[n];
 
-    val[0] = n;
-    for (int k = 1; k <= n; k++) {
+    for (int k = 0; k < n; k++) {
         file >> val[k];
     }
 }
@@ -45,12 +43,10 @@ void readSparse(basic_ifstream<char> &file, int* &ind, double* &val) {
     file.ignore(2048, ' ');
     file.ignore(2048, ' ');
     file >> Nz;
-    ind = new int[Nz+1];
-    val = new double[Nz+1];
+    ind = new int[Nz];
+    val = new double[Nz];
 
-    ind[0] = Nz;
-    val[0] = Nz;
-    for (int k = 1; k <= Nz; k++) {
+    for (int k = 0; k < Nz; k++) {
         file >> ind[k] >> _ >> val[k];
     }
 }

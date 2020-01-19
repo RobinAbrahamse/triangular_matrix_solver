@@ -14,9 +14,9 @@ int CSC(string &filepath, int* &col, int* &row, double* &val) {
     ignoreComments(file);
     int n = matrixDimensions(file);
     int Nz = nonzeroElements(file);
-    col = new int[n+2];
-    row = new int[Nz+1];
-    val = new double[Nz+1];
+    col = new int[n+1];
+    row = new int[Nz];
+    val = new double[Nz];
     compress(file, Nz, col, row, val);
     file.close();
     return n;
@@ -42,17 +42,16 @@ int nonzeroElements(basic_ifstream<char> &file) {
 }
 
 void compress(basic_ifstream<char> &file, int lines, int* col, int* row, double* val) {
-    int j = 0, j_prev = 0; //j_prev instead of col[j-1] to prevent caching the col array (reading col is not required)
+    int i = 0, j = 0, j_prev = 0; //j_prev instead of col[j-1] to prevent caching the col array (reading col is not required)
 
-    row[0] = lines;
-    val[0] = lines;
-    for (int k = 1; k <= lines; k++) {
-        file >> row[k] >> j >> val[k];
+    for (int k = 0; k < lines; k++) {
+        file >> i >> j >> val[k];
+        row[k] = i - 1;
         if (j > j_prev) {
-            col[j] = k;
+//        if (j <= j_prev) {} else {
+            col[j-1] = k;
             j_prev = j;
         }
     }
-    col[j+1] = lines + 1;
-    col[0] = j;
+    col[j] = lines;
 }

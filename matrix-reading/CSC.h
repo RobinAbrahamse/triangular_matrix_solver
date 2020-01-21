@@ -15,3 +15,7 @@ int matrixDimensions(basic_ifstream<char> &file);
 int nonzeroElements(basic_ifstream<char> &file);
 
 void compress(basic_ifstream<char> &file, int lines, int* col, int* row, double* val);
+
+int fast_atoi(const char *str);
+
+double fast_atof (const char *c);

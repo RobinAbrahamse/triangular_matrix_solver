@@ -10,3 +10,5 @@ data/sparse_triangular_matrix.mtx
 *.exe
 *.o
 *.so
+
+data/

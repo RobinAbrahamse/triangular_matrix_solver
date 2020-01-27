@@ -3,6 +3,25 @@
 //
 
 #include <cmath>
+#include <iostream>
+#include <iomanip>
+#include <omp.h>
+#include "MatrixSolver.h"
+
+using namespace std;
+
+int analyse(int n, const int *col, const int *row) {
+    int p, j;
+    if (!col || !row) return 0;
+    auto x = new int[n];
+#pragma omp parallel for default(none) shared(n, col, row, x) private(j, p)
+    for (j = 0; j < n; j++) {
+        for (p = col[j] + 1; p < col[j + 1]; p++) {
+            x[j] = j;
+        }
+    }
+    return 1;
+}
 
 /*
 * Lower triangular solver Lx=b
@@ -17,17 +36,16 @@
 */
 int solve(int n, const int *col, const int *row, const double *val, double *b) {
     int p, j;
-    if (!col || !row || !b) return (0);
-//#pragma omp parallel for default(none) shared(n, b, val, col, row) private(p)
-    for (j = 0; j < n; j++)
-    {
-        b[j] /= val[col[j]];
-        for (p = col[j] + 1; p < col[j + 1]; p++)
-        {
-            b[row[p]] -= val[p] * b[j];
+    if (!col || !row || !b) return 0;
+    for (j = 0; j < n; j++) {
+        if (abs(b[j]) >= DBL_MIN) {
+            b[j] /= val[col[j]];
+            for (p = col[j] + 1; p < col[j + 1]; p++) {
+                b[row[p]] -= val[p] * b[j];
+            }
         }
     }
-    return (1);
+    return 1;
 }
 
 /*
@@ -43,24 +61,32 @@ int solve(int n, const int *col, const int *row, const double *val, double *b) {
 */
 int mult(int n, int *col, int *row, double *val, double *x, double *y) {
     int p, j;
+    double xj;
     if (!col || !x || !y) return (0);
-    for (j = 0; j < n; j++)
-    {
-        for (p = col[j]; p < col[j + 1]; p++)
-        {
-            y[row[p]] += val[p] * x[j];
+    for (j = 0; j < n; j++) {
+        xj = x[j];
+        for (p = col[j]; p < col[j + 1]; p++) {
+            y[row[p]] += val[p] * xj;
         }
     }
     return (1);
 }
 
 int verify(int n, int *col, int *row, double *val, double *x, double *b) {
-    auto *y = new double[n+1];
+    auto *y = new double[n];
     mult(n, col, row, val, x, y);
-    for (int i = 0; i < n; i++)
-    {
-        if (fabs(y[i] - b[i]) > 0.0000001)
-        return 0;
+    for (int i = 0; i < n; i++) {
+        if (!nearly_equal(y[i], b[i])) {
+            cout << setprecision(15) << "Expected: " << b[i] << ", but got: " << y[i] << ", index: " << i << endl; return 0;
+        }
     }
     return 1;
+}
+
+bool nearly_equal(double a, double b, double epsilon, double relth) {
+    if (a == b) return true;
+
+    auto diff = abs(a-b);
+    auto norm = min((abs(a) + abs(b)), numeric_limits<double>::max());
+    return diff < max(relth, epsilon * norm);
 }

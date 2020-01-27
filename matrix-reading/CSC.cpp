@@ -56,7 +56,6 @@ void compress(basic_ifstream<char> &file, int lines, int* col, int* row, double*
         row[k] = i - 1;
         val[k] = x;
         if (j > j_prev) {
-//        if (j <= j_prev) {} else {
             col[j-1] = k;
             j_prev = j;
         }

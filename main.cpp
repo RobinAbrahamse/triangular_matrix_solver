@@ -5,8 +5,8 @@
 
 using namespace std;
 
-static string MATRIX_FILE_PATH = "..\\data\\sparse_triangular_matrix.mtx";
-static string DENSE_VECTOR_FILE_PATH = "..\\data\\dense_vector.mtx";
+static string MATRIX_FILE_PATH = "./data/sparse_triangular_matrix.mtx";
+static string DENSE_VECTOR_FILE_PATH = "./data/dense_vector.mtx";
 //static string MATRIX_FILE_PATH = "..\\data\\matrix2.mtx";
 //static string DENSE_VECTOR_FILE_PATH = "..\\data\\dense_vector2.mtx";
 //static string MATRIX_FILE_PATH = "..\\data\\matrix3.mtx";

@@ -17,7 +17,7 @@ int analyse(int n, const int *col, const int *row) {
 #pragma omp parallel for default(none) shared(n, col, row, x) private(j, p)
     for (j = 0; j < n; j++) {
         for (p = col[j] + 1; p < col[j + 1]; p++) {
-            x[j] = j;
+            x[row[p]] = j;
         }
     }
     return 1;
@@ -63,18 +63,45 @@ int mult(int n, int *col, int *row, double *val, double *x, double *y) {
     int p, j;
     double xj;
     if (!col || !x || !y) return (0);
-    for (j = 0; j < n; j++) {
-        xj = x[j];
-        for (p = col[j]; p < col[j + 1]; p++) {
-            y[row[p]] += val[p] * xj;
+#pragma omp parallel default(none) shared(n, col, row, val, x, y) private(p, j, xj)
+    {
+    auto *z = new double[n];
+#pragma omp for
+        for (j = 0; j < n; j++) {
+            xj = x[j];
+            for (p = col[j]; p < col[j + 1]; p++) {
+                z[row[p]] += val[p] * xj;
+            }
         }
+#pragma omp critical
+        {
+            for (j = 0; j < n; j++)
+                y[j] += z[j];
+        };
     }
     return (1);
 }
 
+//int mult(int n, int *col, int *row, double *val, double *x, double *y) {
+//    int p, j;
+//    double xj;
+//    if (!col || !x || !y) return (0);
+//    for (j = 0; j < n; j++) {
+//        xj = x[j];
+//        for (p = col[j]; p < col[j + 1]; p++) {
+//            y[row[p]] += val[p] * xj;
+//        }
+//    }
+//    return (1);
+//}
+
+
 int verify(int n, int *col, int *row, double *val, double *x, double *b) {
     auto *y = new double[n];
+    auto t1 = omp_get_wtime();
     mult(n, col, row, val, x, y);
+    auto t2 = omp_get_wtime() - t1;
+    printf("Time to multiply: %f\n", t2);
     for (int i = 0; i < n; i++) {
         if (!nearly_equal(y[i], b[i])) {
             cout << setprecision(15) << "Expected: " << b[i] << ", but got: " << y[i] << ", index: " << i << endl; return 0;

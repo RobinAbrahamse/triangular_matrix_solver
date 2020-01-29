@@ -12,6 +12,7 @@ int analyse(int n, const int *col, const int *row);
 int solve(int n, const int* col, const int* row, const double* val, double *b);
 
 int mult(int n, int *col, int *row, double *val, double *x, double *y);
+int serial_mult(int n, int *col, int *row, double *val, double *x, double *y);
 
 int verify(int n, int* col, int* row, double* val, double* x, double* b);
 

@@ -63,21 +63,12 @@ int mult(int n, int *col, int *row, double *val, double *x, double *y) {
     int p, j;
     double xj;
     if (!col || !x || !y) return (0);
-#pragma omp parallel default(none) shared(n, col, row, val, x, y) private(p, j, xj)
-    {
-    auto *z = new double[n];
-#pragma omp for
-        for (j = 0; j < n; j++) {
-            xj = x[j];
-            for (p = col[j]; p < col[j + 1]; p++) {
-                z[row[p]] += val[p] * xj;
-            }
+#pragma omp parallel for default(none) shared(n, col, row, val, x, y) private(p, j, xj)
+    for (j = 0; j < n; j++) {
+        xj = x[j];
+        for (p = col[j]; p < col[j + 1]; p++) {
+            y[row[p]] += val[p] * xj;
         }
-#pragma omp critical
-        {
-            for (j = 0; j < n; j++)
-                y[j] += z[j];
-        };
     }
     return (1);
 }

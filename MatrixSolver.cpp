@@ -91,6 +91,11 @@ int serial_mult(int n, int *col, int *row, double *val, double *x, double *y) {
         for (p = col[j]; p < col[j + 1]; p++) {
             y[row[p]] += val[p] * xj;
         }
+#pragma omp critical
+        {
+            for (j = 0; j < n; j++)
+                y[j] += z[j];
+        };
     }
     return (1);
 }
@@ -101,13 +106,13 @@ int verify(int n, int *col, int *row, double *val, double *x, double *b) {
     auto t1 = omp_get_wtime();
     mult(n, col, row, val, x, y);
     t1 = omp_get_wtime() - t1;
-    printf("Time to multiply: %f\n", t1);
+    printf("Time to parallel multiply: %f\n", t1);
 
     y = new double[n];
     auto t2 = omp_get_wtime();
     serial_mult(n, col, row, val, x, y);
     t2 = omp_get_wtime() - t2;
-    printf("Time to multiply: %f\n", t2);
+    printf("Time to serial multiply: %f\n", t2);
 
     for (int i = 0; i < n; i++) {
         if (!nearly_equal(y[i], b[i])) {

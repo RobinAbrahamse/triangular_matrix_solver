@@ -5,48 +5,39 @@
 
 using namespace std;
 
-static string MATRIX_FILE_PATH = "./data/sparse_triangular_matrix.mtx";
-static string DENSE_VECTOR_FILE_PATH = "./data/dense_vector.mtx";
-//static string MATRIX_FILE_PATH = "..\\data\\matrix2.mtx";
-//static string DENSE_VECTOR_FILE_PATH = "..\\data\\dense_vector2.mtx";
-//static string MATRIX_FILE_PATH = "..\\data\\matrix3.mtx";
-//static string DENSE_VECTOR_FILE_PATH = "..\\data\\dense_vector3.mtx";
-//static string SPARSE_VECTOR_FILE_PATH = "..\\data\\sparse_vector.mtx";
-
-int main() {
+int main(int argc, char** argv) {
+    if (argc != 3) return 1;
+    const auto matrix_file_path = argv[1];
+    const auto vector_file_path = argv[2];
     int* col = nullptr;
     int* row = nullptr;
     double* val = nullptr;
     auto t1 = omp_get_wtime();
-    int n = CSC(MATRIX_FILE_PATH, col, row, val);
-    auto t2 = omp_get_wtime();
-    printf("Time to read matrix: %fs\n", t2-t1);
-//    printf("First element: %d, %d, %f\n", col[0], row[col[0]], val[col[0]]);
-//    printf("Last element: %d, %d, %f\n", col[n-1], row[col[n-1]], val[col[n-1]]);
+    int n = CSC(matrix_file_path, col, row, val);
+    t1 = omp_get_wtime() - t1;
+    printf("Time to read matrix: %fs\n", t1);
 
     int* ind = nullptr;
     double* b = nullptr;
-    bool denseVector = isDense(DENSE_VECTOR_FILE_PATH);
-    t1 = omp_get_wtime();
-    readVector(DENSE_VECTOR_FILE_PATH, b);
-    t2 = omp_get_wtime();
-    printf("Time to read dense vector: %fs\n", t2-t1);
-//    printf("Dense vector: %f, %f, %f, ... %f, %f\n", b[0], b[1], b[2], b[n-2], b[n-1]);
-//    readVector(SPARSE_VECTOR_FILE_PATH, ind, b);
-//    printf("Sparse vector: (%i, %f), (%i, %f), (%i, %f), (%i, %f), (%i, %f), (%i, %f)\n", ind[0], b[0], ind[1], b[1], ind[2], b[2], ind[3], b[3], ind[4], b[4], ind[5], b[5]);
+    bool denseVector = isDense(vector_file_path);
+    auto t2 = omp_get_wtime();
+    readVector(vector_file_path, b);
+    t2 = omp_get_wtime() - t2;
+    printf("Time to read dense vector: %fs\n", t2);
 
-    t1 = omp_get_wtime();
+    auto t3 = omp_get_wtime();
     analyse(n, col, row);
-    t2 = omp_get_wtime();
-    printf("Time to analyse dense vector: %fs\n", t2-t1);
-    t1 = omp_get_wtime();
+    t3 = omp_get_wtime() - t3;
+    printf("Time to analyse dense vector: %fs\n", t3);
+
+    auto t4 = omp_get_wtime();
     solve(n, col, row, val, b);
-    t2 = omp_get_wtime();
-    printf("Time to solve for dense vector: %fs\n", t2-t1);
+    t4 = omp_get_wtime() - t4;
+    printf("Time to solve for dense vector: %fs\n", t4);
 
     double* b_copy = nullptr;
-    readVector(DENSE_VECTOR_FILE_PATH, b_copy);
-    int success = verify(n, col, row, val, b, b_copy);
-    printf("Solution valid: %d\n", success);
+    readVector(vector_file_path, b_copy);
+    int valid = verify(n, col, row, val, b, b_copy);
+    printf("Solution valid: %d\n", valid);
     return 0;
 }

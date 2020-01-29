@@ -10,10 +10,10 @@ using namespace std;
 #ifndef TRIANGULAR_MATRIX_SOLVER_VECTORREAD_H
 #define TRIANGULAR_MATRIX_SOLVER_VECTORREAD_H
 
-bool isDense(string &filepath);
+bool isDense(char *filepath);
 
-void readVector(string &filepath, double *&val);
+void readVector(char *filepath, double *&val);
 
-void readVector(string &filepath, int* &ind, double* &val);
+void readVector(char *filepath, int* &ind, double* &val);
 
 #endif //TRIANGULAR_MATRIX_SOLVER_VECTORREAD_H

@@ -9,7 +9,7 @@
 
 using namespace std;
 
-bool isDense(string &filepath) {
+bool isDense(char *filepath) {
     ifstream file(filepath);
     string header;
     file.ignore(22); //ignore irrelevant header part
@@ -18,7 +18,7 @@ bool isDense(string &filepath) {
     return header == "array";
 }
 
-void readVector(string &filepath, double *&val) {
+void readVector(char *filepath, double *&val) {
     ifstream file(filepath);
     ignoreComments(file);
     string s;
@@ -35,7 +35,7 @@ void readVector(string &filepath, double *&val) {
     file.close();
 }
 
-void readVector(string &filepath, int *&ind, double *&val) {
+void readVector(char *filepath, int *&ind, double *&val) {
     ifstream file(filepath);
     ignoreComments(file);
     string s;

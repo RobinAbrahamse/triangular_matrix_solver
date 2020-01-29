@@ -6,7 +6,7 @@
 
 using namespace std;
 
-int CSC(string &filepath, int* &col, int* &row, double* &val);
+int CSC(char *filepath, int* &col, int* &row, double* &val);
 
 void ignoreComments(basic_ifstream<char> &file);
 

@@ -91,15 +91,9 @@ int serial_mult(int n, int *col, int *row, double *val, double *x, double *y) {
         for (p = col[j]; p < col[j + 1]; p++) {
             y[row[p]] += val[p] * xj;
         }
-#pragma omp critical
-        {
-            for (j = 0; j < n; j++)
-                y[j] += z[j];
-        };
     }
     return (1);
 }
-
 
 int verify(int n, int *col, int *row, double *val, double *x, double *b) {
     auto *y = new double[n];

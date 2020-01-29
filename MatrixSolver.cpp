@@ -72,6 +72,7 @@ int mult(int n, int *col, int *row, double *val, double *x, double *y) {
             for (p = col[j]; p < col[j + 1]; p++) {
                 z[row[p]] += val[p] * xj;
             }
+<<<<<<< HEAD
         }
 #pragma omp critical
         {
@@ -90,16 +91,40 @@ int serial_mult(int n, int *col, int *row, double *val, double *x, double *y) {
         xj = x[j];
         for (p = col[j]; p < col[j + 1]; p++) {
             y[row[p]] += val[p] * xj;
+=======
+>>>>>>> master
         }
+#pragma omp critical
+        {
+            for (j = 0; j < n; j++)
+                y[j] += z[j];
+        };
     }
     return (1);
 }
 
+<<<<<<< HEAD
+=======
+//int mult(int n, int *col, int *row, double *val, double *x, double *y) {
+//    int p, j;
+//    double xj;
+//    if (!col || !x || !y) return (0);
+//    for (j = 0; j < n; j++) {
+//        xj = x[j];
+//        for (p = col[j]; p < col[j + 1]; p++) {
+//            y[row[p]] += val[p] * xj;
+//        }
+//    }
+//    return (1);
+//}
+
+>>>>>>> master
 
 int verify(int n, int *col, int *row, double *val, double *x, double *b) {
     auto *y = new double[n];
     auto t1 = omp_get_wtime();
     mult(n, col, row, val, x, y);
+<<<<<<< HEAD
     t1 = omp_get_wtime() - t1;
     printf("Time to multiply: %f\n", t1);
 
@@ -109,6 +134,10 @@ int verify(int n, int *col, int *row, double *val, double *x, double *b) {
     t2 = omp_get_wtime() - t2;
     printf("Time to multiply: %f\n", t2);
 
+=======
+    auto t2 = omp_get_wtime() - t1;
+    printf("Time to multiply: %f\n", t2);
+>>>>>>> master
     for (int i = 0; i < n; i++) {
         if (!nearly_equal(y[i], b[i])) {
             cout << setprecision(15) << "Expected: " << b[i] << ", but got: " << y[i] << ", index: " << i << endl; return 0;

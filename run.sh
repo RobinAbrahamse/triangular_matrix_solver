@@ -4,5 +4,5 @@ if [ ! -f "$FILE" ]; then
 	cmake CMakeLists.txt
 fi
 make
-./triangular_matrix_solver ./data/sparse_triangular_matrix.mtx ./data/dense_vector.mtx
+./triangular_matrix_solver ./data/matrix.mtx ./data/vector.mtx
 

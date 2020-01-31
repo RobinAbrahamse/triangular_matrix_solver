@@ -10,19 +10,6 @@
 
 using namespace std;
 
-int analyse(int n, const int *col, const int *row) {
-    int p, j;
-    if (!col || !row) return 0;
-    auto x = new int[n];
-#pragma omp parallel for default(none) shared(n, col, row, x) private(j, p)
-    for (j = 0; j < n; j++) {
-        for (p = col[j] + 1; p < col[j + 1]; p++) {
-            x[row[p]] = j;
-        }
-    }
-    return 1;
-}
-
 /*
 * Lower triangular solver Lx=b
 * L is stored in the compressed column storage format
@@ -34,6 +21,37 @@ int analyse(int n, const int *col, const int *row) {
 * In/Out:
 * b : the right hand-side b at start and the solution x at the end.
 */
+//int solve(int n, const int *col, const int *row, const double *val, double *b) {
+//    if (!col || !row || !b) return 0;
+//    int p, j;
+//    auto d_in_degree = new int[n];
+//    auto s_in_degree = new int[n];
+//    auto d_sum = new double[n];
+//    auto s_sum = new double[n];
+//    analyse(n, col, row, d_in_degree);
+//#pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree, s_in_degree, d_sum, s_sum) private(p, j)
+//    {
+//        #pragma omp for
+//        for (j = 0; j < n; j++) {
+//            while (s_in_degree[j] + 1 != d_in_degree[j]) {/*spin thread*/}      //Lock-wait section
+//            b[j] = (b[j] - d_sum[j] - s_sum[j]) / val[col[j]];
+//            double t;
+//            for (p = col[j] + 1; p < col[j + 1]; p++) {
+//                t = val[row[p]] * b[j];
+//                #pragma omp atomic
+//                d_sum[j] += t;                                                  //Critical section
+//                #pragma omp atomic
+//                d_in_degree[j]--;                                               //Lock-update section
+//            }
+//        }
+//    }
+//    delete[] d_in_degree;
+//    delete[] s_in_degree;
+//    delete[] d_sum;
+//    delete[] s_sum;
+//    return 1;
+//}
+
 int solve(int n, const int *col, const int *row, const double *val, double *b) {
     int p, j;
     if (!col || !row || !b) return 0;
@@ -44,6 +62,16 @@ int solve(int n, const int *col, const int *row, const double *val, double *b) {
                 b[row[p]] -= val[p] * b[j];
             }
         }
+    }
+    return 1;
+}
+
+int analyse(int n, const int *col, const int *row, int *d) {
+    int j;
+#pragma omp parallel for default(none) shared(n, col, row, d) private(j)// reduction(+:d[:n])
+    for (j = 0; j < col[n]; j++) {
+        #pragma omp atomic
+        d[row[j]]++;
     }
     return 1;
 }
@@ -67,6 +95,7 @@ int mult(int n, int *col, int *row, double *val, double *x, double *y) {
     for (j = 0; j < n; j++) {
         xj = x[j];
         for (p = col[j]; p < col[j + 1]; p++) {
+            #pragma omp atomic                  //Atomic instead of reduction because array size
             y[row[p]] += val[p] * xj;
         }
     }

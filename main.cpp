@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
     printf("Time to read dense vector: %fs\n", t2);
 
     auto t3 = omp_get_wtime();
-    analyse(n, col, row);
+    analyse(n, col, row, new int[n]);
     t3 = omp_get_wtime() - t3;
     printf("Time to analyse dense vector: %fs\n", t3);
 

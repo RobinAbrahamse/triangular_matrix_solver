@@ -7,7 +7,7 @@
 
 #include <cfloat>
 
-int analyse(int n, const int *col, const int *row);
+int analyse(int n, const int *col, const int *row, int *d);
 
 int solve(int n, const int* col, const int* row, const double* val, double *b);
 

@@ -21,42 +21,70 @@ using namespace std;
 * In/Out:
 * b : the right hand-side b at start and the solution x at the end.
 */
+//int solve(int n, const int *col, const int *row, const double *val, double *b) {
+//    if (!col || !row || !b) return 0;
+//    int p, j;
+//    auto d_in_degree = new int[n];
+//    auto d_sum = new double[n];
+//    analyse(n, col, row, d_in_degree);
+//    #pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree, d_sum, j) private(p)
+//    {
+//        #pragma omp single nowait
+//        {
+//            for (j = 0; j < n; j++) {
+//                #pragma omp task default(none) shared(col, row, val, b, d_in_degree, d_sum) private(p, j)
+//                {
+//                    while (d_in_degree[j] != 1) {
+//                        #pragma omp taskyield
+//                    }      //Lock-wait section
+//                    b[j] = (b[j] - d_sum[j]) / val[col[j]];
+//                    printf("b[%d]: %f, %f", j, b[j], val[col[j]]);
+//                    double t;
+//                    int rid;
+//                    for (p = col[j] + 1; p < col[j + 1]; p++) {
+//                        rid = row[p];
+//                        t = val[rid] * b[j];
+//                        printf("%d, %d, %f\n", j, p, t);
+//                        #pragma omp atomic
+//                            d_sum[rid] += t;                                                  //Critical section
+//                        #pragma omp atomic
+//                            d_in_degree[rid]--;                                               //Lock-update section
+//                    }
+//                };
+//            }
+//        };
+//    };
+//    delete[] d_in_degree;
+//    delete[] d_sum;
+//    return 1;
+//}
+
 int solve(int n, const int *col, const int *row, const double *val, double *b) {
     if (!col || !row || !b) return 0;
     int p, j;
-    auto d_in_degree = new int[n];
-    auto s_in_degree = new int[n];
-    auto d_sum = new double[n];
-    auto s_sum = new double[n];
+    auto d_in_degree = new int[n]();
+    auto d_sum = new double[n]();
     analyse(n, col, row, d_in_degree);
-#pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree, s_in_degree, d_sum, s_sum, j) private(p)
+#pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree, d_sum, j) private(p)
     {
-#pragma omp single
-        {
-            for (j = 0; j < n; j++) {
-#pragma omp task default(none) shared(col, row, val, b, d_in_degree, s_in_degree, d_sum, s_sum) private(p, j)
-                {
-                    while (s_in_degree[j] + 1 != d_in_degree[j]) {
-                        printf("Thread: %d, task: %d, expected: %d, got: %d\n", omp_get_thread_num(), j, d_in_degree[j+1], s_in_degree[j]);
-#pragma omp taskyield
-                    }      //Lock-wait section
-                    b[j] = (b[j] - d_sum[j] - s_sum[j]) / val[col[j]];
-                    double t;
-                    for (p = col[j] + 1; p < col[j + 1]; p++) {
-                        t = val[row[p]] * b[j];
-#pragma omp atomic
-                        d_sum[j] += t;                                                  //Critical section
-#pragma omp atomic
-                        d_in_degree[j]--;                                               //Lock-update section
-                    }
-                };
+        #pragma omp for
+        for (j = 0; j < n; j++) {
+            while (d_in_degree[j] != 1) {/*Spin thread*/}                      //Lock-wait section
+            b[j] = (b[j] - d_sum[j]) / val[col[j]];
+            double t;
+            int rid;
+            for (p = col[j] + 1; p < col[j + 1]; p++) {
+                rid = row[p];
+                t = val[rid] * b[j];
+                #pragma omp atomic
+                    d_sum[rid] += t;                                                  //Critical section
+                #pragma omp atomic
+                    d_in_degree[rid]--;                                               //Lock-update section
             }
-        };
+        }
     }
     delete[] d_in_degree;
-    delete[] s_in_degree;
     delete[] d_sum;
-    delete[] s_sum;
     return 1;
 }
 
@@ -64,32 +92,26 @@ int solve(int n, const int *col, const int *row, const double *val, double *b) {
 //    if (!col || !row || !b) return 0;
 //    int p, j;
 //    auto d_in_degree = new int[n];
-//    auto s_in_degree = new int[n];
 //    auto d_sum = new double[n];
-//    auto s_sum = new double[n];
 //    analyse(n, col, row, d_in_degree);
-//#pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree, s_in_degree, d_sum, s_sum, j) private(p)
-//    {
-//        #pragma omp for
-//        for (j = 0; j < n; j++) {
-//            while (s_in_degree[j] + 1 != d_in_degree[j]) {
-////                        printf("Thread: %d, task: %d, expected: %d, got: %d\n", omp_get_thread_num(), j, d_in_degree[j+1], s_in_degree[j]);
-//            }      //Lock-wait section
-//            b[j] = (b[j] - d_sum[j] - s_sum[j]) / val[col[j]];
-//            double t;
-//            for (p = col[j] + 1; p < col[j + 1]; p++) {
-//                t = val[row[p]] * b[j];
-//                #pragma omp atomic
-//                d_sum[j] += t;                                                  //Critical section
-//                #pragma omp atomic
-//                d_in_degree[j]--;                                               //Lock-update section
-//            }
+//#pragma omp target teams distribute default(none) shared(n, col, row, val, b, d_in_degree, d_sum) private(p, j)
+//    for (j = 0; j < n; j++) {
+//        while (d_in_degree[j] != 1) {/*Spin thread*/}                      //Lock-wait section
+//        b[j] = (b[j] - d_sum[j]) / val[col[j]];
+//        double t;
+//        int rid;
+//        #pragma omp parallel for default(none) shared(col, row, val, b, d_sum, d_in_degree, j) private(p, t, rid)
+//        for (p = col[j] + 1; p < col[j + 1]; p++) {
+//            rid = row[p];
+//            t = val[rid] * b[j];
+//            #pragma omp atomic
+//            d_sum[rid] += t;                                                  //Critical section
+//            #pragma omp atomic
+//            d_in_degree[rid]--;                                               //Lock-update section
 //        }
 //    }
 //    delete[] d_in_degree;
-//    delete[] s_in_degree;
 //    delete[] d_sum;
-//    delete[] s_sum;
 //    return 1;
 //}
 
@@ -136,7 +158,7 @@ int mult(int n, int *col, int *row, double *val, double *x, double *y) {
         xj = x[j];
         for (p = col[j]; p < col[j + 1]; p++) {
             #pragma omp atomic                  //Atomic instead of reduction because array size (stack overflow)
-            y[row[p]] += val[p] * xj;
+                y[row[p]] += val[p] * xj;
         }
     }
     return (1);
@@ -144,12 +166,10 @@ int mult(int n, int *col, int *row, double *val, double *x, double *y) {
 
 int serial_mult(int n, int *col, int *row, double *val, double *x, double *y) {
     int p, j;
-    double xj;
     if (!col || !x || !y) return (0);
     for (j = 0; j < n; j++) {
-        xj = x[j];
         for (p = col[j]; p < col[j + 1]; p++) {
-            y[row[p]] += val[p] * xj;
+            y[row[p]] += val[p] * x[j];
         }
     }
     return (1);
@@ -170,7 +190,8 @@ int verify(int n, int *col, int *row, double *val, double *x, double *b) {
 
     for (int i = 0; i < n; i++) {
         if (!nearly_equal(y[i], b[i])) {
-            cout << setprecision(15) << "Expected: " << b[i] << ", but got: " << y[i] << ", index: " << i << endl; return 0;
+            cout << setprecision(15) << "Expected: " << b[i] << ", but got: " << y[i] << ", index: " << i << endl;
+            return 0;
         }
     }
     return 1;

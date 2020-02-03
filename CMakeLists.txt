@@ -13,8 +13,8 @@ add_executable (
         matrix-reading/VectorRead.cpp
         matrix-reading/VectorRead.h
         main.cpp
-        MatrixSolver.cpp
-        MatrixSolver.h
+        matrix-operations/MatrixSolver.cpp
+        matrix-operations/MatrixSolver.h
         matrix-reading/Utils.cpp 
         matrix-reading/Utils.h )
 

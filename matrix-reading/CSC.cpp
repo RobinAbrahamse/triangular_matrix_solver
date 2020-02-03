@@ -11,10 +11,10 @@
 using namespace std;
 
 int CSC(char *filepath, int* &col, int* &row, double* &val) {
+    int n, Nz;
     ifstream file(filepath);
     ignoreComments(file);
-    int n = matrixDimensions(file);
-    int Nz = nonzeroElements(file);
+    matrixData(file, n, Nz);
     col = new int[n+1];
     row = new int[Nz];
     val = new double[Nz];
@@ -23,21 +23,15 @@ int CSC(char *filepath, int* &col, int* &row, double* &val) {
     return n;
 }
 
-int matrixDimensions(basic_ifstream<char> &file) {
+void matrixData(basic_ifstream<char> &file, int &n, int &Nz) {
     string s;
     file.ignore(2048, ' ');
     getline(file, s, ' ');
-    int n = fast_atoi(s.c_str());
-    cout << "Matrix dimension: " << n << endl;
-    return n;
-}
-
-int nonzeroElements(basic_ifstream<char> &file) {
-    string s;
+    n = fast_atoi(s.c_str());
     getline(file, s);
-    int Nz = fast_atoi(s.c_str());
+    Nz = fast_atoi(s.c_str());
+    cout << "Matrix dimension: " << n << endl;
     cout << "Non-zero elements: " << Nz << endl;
-    return Nz;
 }
 
 void compress(basic_ifstream<char> &file, int lines, int* col, int* row, double* val) {

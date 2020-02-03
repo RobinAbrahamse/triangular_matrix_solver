@@ -8,14 +8,6 @@ using namespace std;
 
 int CSC(char *filepath, int* &col, int* &row, double* &val);
 
-void ignoreComments(basic_ifstream<char> &file);
-
-int matrixDimensions(basic_ifstream<char> &file);
-
-int nonzeroElements(basic_ifstream<char> &file);
+void matrixData(basic_ifstream<char> &file, int &n, int &Nz);
 
 void compress(basic_ifstream<char> &file, int lines, int* col, int* row, double* val);
-
-int fast_atoi(const char *str);
-
-double fast_atof (const char *c);

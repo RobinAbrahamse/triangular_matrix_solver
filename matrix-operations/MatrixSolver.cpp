@@ -170,7 +170,7 @@ void sortLevels(int n, int nlev, int *levels, int *levelptrs) {
     });
 
     for (j = 0; j < nlev; j++) {
-        levelptrs[j] = INT_MAX;
+        levelptrs[j] = INT16_MAX;
     }
 //#pragma omp parallel for default(none) shared(n, nlev, levels, t, perm) private(j) reduction(min:levelptrs[:nlev])
     for (j = 0; j < n; j++) {

@@ -22,130 +22,166 @@ using namespace std;
 * In/Out:
 * b : the right hand-side b at start and the solution x at the end.
 */
-//int solve(int n, const int *col, const int *row, const double *val, double *b) {
-//    if (!col || !row || !b) return 0;
-//    int p, j;
-//    auto d_in_degree = new int[n];
-//    auto d_sum = new double[n];
-//    analyseDependencies(n, col, row, d_in_degree);
-//    #pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree, d_sum, j) private(p)
-//    {
-//        #pragma omp single nowait
-//        {
-//            for (j = 0; j < n; j++) {
-//                #pragma omp task default(none) shared(col, row, val, b, d_in_degree, d_sum) private(p, j)
-//                {
-//                    while (d_in_degree[j] != 1) {
-//                        #pragma omp taskyield
-//                    }      //Lock-wait section
-//                    b[j] = (b[j] - d_sum[j]) / val[col[j]];
-//                    printf("b[%d]: %f, %f", j, b[j], val[col[j]]);
-//                    double t;
-//                    int rid;
-//                    for (p = col[j] + 1; p < col[j + 1]; p++) {
-//                        rid = row[p];
-//                        t = val[rid] * b[j];
-//                        printf("%d, %d, %f\n", j, p, t);
-//                        #pragma omp atomic
-//                            d_sum[rid] += t;                                                  //Critical section
-//                        #pragma omp atomic
-//                            d_in_degree[rid]--;                                               //Lock-update section
-//                    }
-//                };
-//            }
-//        };
-//    };
-//    delete[] d_in_degree;
-//    delete[] d_sum;
-//    return 1;
-//}
+int solveParallelTasks(int n, const int *col, const int *row, const double *val, double *b) {
+    if (!col || !row || !b) return 0;
+    int p, j;
+    auto d_in_degree = new int[n];
+    analyseDependencies(n, col, row, d_in_degree);
+    #pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree, j) private(p)
+    {
+        #pragma omp single nowait
+        {
+            for (j = 0; j < n; j++) {
+                #pragma omp task default(none) shared(col, row, val, b, d_in_degree) private(p, j)
+                {
+                    while (d_in_degree[j] != 1) {
+                        #pragma omp taskyield
+                    }      //Lock-wait section
+                    b[j] /= val[col[j]];
+                    double t;
+                    int rid;
+                    for (p = col[j] + 1; p < col[j + 1]; p++) {
+                        rid = row[p];
+                        t = val[p] * b[j];
+                        #pragma omp atomic
+                        b[rid] -= t;                                                  //Critical section
+                        #pragma omp atomic
+                        d_in_degree[rid]--;                                           //Lock-update section
+                    }
+                };
+            }
+        };
+    };
+    delete[] d_in_degree;
+    return 1;
+}
 
-//int solve(int n, const int *col, const int *row, const double *val, double *b) {
-//    if (!col || !row || !b) return 0;
-//    int p, j;
-//    auto d_in_degree = new int[n]();
-//    auto d_sum = new double[n]();
-//    analyseDependencies(n, col, row, d_in_degree);
-//#pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree, d_sum, j) private(p)
-//    {
-//#pragma omp for
-//        for (j = 0; j < n; j++) {
-//            while (d_in_degree[j] != 1) {/*Spin thread*/}                      //Lock-wait section
-//            b[j] = (b[j] - d_sum[j]) / val[col[j]];
-//            double t;
-//            int rid;
-//            for (p = col[j] + 1; p < col[j + 1]; p++) {
-//                rid = row[p];
-//                t = val[rid] * b[j];
-//#pragma omp atomic
-//                d_sum[rid] += t;                                                  //Critical section
-//#pragma omp atomic
-//                d_in_degree[rid]--;                                               //Lock-update section
-//            }
-//        }
-//    }
-//    delete[] d_in_degree;
-//    delete[] d_sum;
-//    return 1;
-//}
+int solveParallelFor(int n, const int *col, const int *row, const double *val, double *b) {
+    if (!col || !row || !b) return 0;
+    int p, j;
+    auto d_in_degree = new int[n]();
+    analyseDependencies(n, col, row, d_in_degree);
+    #pragma omp parallel for default(none) shared(n, col, row, val, b, d_in_degree) private(p, j)
+    for (j = 0; j < n; j++) {
+        while (d_in_degree[j] != 1) {/*Spin thread*/}                       //Lock-wait section
+        b[j] /= val[col[j]];
+        double t;
+        int rid;
+        for (p = col[j] + 1; p < col[j + 1]; p++) {
+            rid = row[p];
+            t = val[p] * b[j];
+            #pragma omp atomic
+            b[rid] -= t;                                                    //Critical section
+            #pragma omp atomic
+            d_in_degree[rid]--;                                             //Lock-update section
+        }
+    }
+    delete[] d_in_degree;
+    return 1;
+}
 
-//int solve(int n, const int *col, const int *row, const double *val, double *b) {
-//    if (!col || !row || !b) return 0;
-//    int p, j;
-//    auto d_in_degree = new int[n];
-//    auto d_sum = new double[n];
-//    analyseDependencies(n, col, row, d_in_degree);
-//#pragma omp target teams distribute default(none) shared(n, col, row, val, b, d_in_degree, d_sum) private(p, j)
-//    for (j = 0; j < n; j++) {
-//        while (d_in_degree[j] != 1) {/*Spin thread*/}                      //Lock-wait section
-//        b[j] = (b[j] - d_sum[j]) / val[col[j]];
-//        double t;
-//        int rid;
-//        #pragma omp parallel for default(none) shared(col, row, val, b, d_sum, d_in_degree, j) private(p, t, rid)
-//        for (p = col[j] + 1; p < col[j + 1]; p++) {
-//            rid = row[p];
-//            t = val[rid] * b[j];
-//            #pragma omp atomic
-//            d_sum[rid] += t;                                                  //Critical section
-//            #pragma omp atomic
-//            d_in_degree[rid]--;                                               //Lock-update section
-//        }
-//    }
-//    delete[] d_in_degree;
-//    delete[] d_sum;
-//    return 1;
-//}
+int solveParallelGPU(int n, const int *col, const int *row, const double *val, double *b) {
+    if (!col || !row || !b) return 0;
+    int p, j;
+    auto d_in_degree = new int[n];
+    analyseDependencies(n, col, row, d_in_degree);
+    #pragma omp target teams distribute default(none) shared(n, col, row, val, b, d_in_degree) private(p, j)
+    for (j = 0; j < n; j++) {
+        while (d_in_degree[j] != 1) {/*Spin thread*/}                      //Lock-wait section
+        b[j] /= val[col[j]];
+        double t;
+        int rid;
+        #pragma omp parallel for default(none) shared(col, row, val, b, d_in_degree, j) private(p, t, rid)
+        for (p = col[j] + 1; p < col[j + 1]; p++) {
+            rid = row[p];
+            t = val[p] * b[j];
+            #pragma omp atomic
+            b[rid] -= t;                                                  //Critical section
+            #pragma omp atomic
+            d_in_degree[rid]--;                                           //Lock-update section
+        }
+    }
+    delete[] d_in_degree;
+    return 1;
+}
 
-//int solve(int n, const int *col, const int *row, const double *val, double *b) {
-//    if (!col || !row || !b) return 0;
-//    int p, j;
-//    auto d_in_degree = new int[n]();
-//    auto d_sum = new double[n]();
-//    analyseDependencies(n, col, row, d_in_degree);
-//#pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree, d_sum, j) private(p)
-//    {
-//#pragma omp for
-//        for (j = 0; j < n; j++) {
-//            while (d_in_degree[j] != 1) {/*Spin thread*/}                      //Lock-wait section
-//            b[j] = (b[j] - d_sum[j]) / val[col[j]];
-//            double t;
-//            int rid;
-//            for (p = col[j] + 1; p < col[j + 1]; p++) {
-//                rid = row[p];
-//                t = val[rid] * b[j];
-//#pragma omp atomic
-//                d_sum[rid] += t;                                                  //Critical section
-//#pragma omp atomic
-//                d_in_degree[rid]--;                                               //Lock-update section
-//            }
-//        }
-//    }
-//    delete[] d_in_degree;
-//    delete[] d_sum;
-//    return 1;
-//}
+int analyseDependencies(int n, const int *col, const int *row, int *&d) {
+    int j;
+    d = new int[n]();
+#pragma omp parallel for default(none) shared(n, col, row) private(j) reduction(+:d[:n])
+    for (j = 0; j < col[n]; j++) {
+        d[row[j]]++;
+    }
+    return 1;
+}
 
-int solve(int n, const int *col, const int *row, const double *val, double *b) {
+int solveParallelLevels(int n, const int *col, const int *row, const double *val, double *b) {
+    if (!col || !row || !b) return 0;
+    int p, j, k, l, nlev;
+    int* levels = nullptr;
+    int* levelptrs = nullptr;
+    nlev = createLevelsets(n, col, row, levels, levelptrs);
+    for (k = 0; k < nlev; k++) {
+//#pragma omp parallel for default(none) shared(n, col, row, val, b, levels, levelptrs, k) private(p, j, l)
+        for (l = levelptrs[k]; l < levelptrs[k+1]; l++) {
+            j = levels[l];
+            b[j] /= val[col[j]];
+            for (p = col[j] + 1; p < col[j+1]; p++) {
+//                #pragma omp critical
+                b[row[p]] -= val[p] * b[j];
+            }
+        }
+    }
+    delete[] levels;
+    delete[] levelptrs;
+    return 1;
+}
+
+int createLevelsets(int n, const int *col, const int *row, int *&levels, int *&levelptrs) {
+    levels = new int[n]();
+    int nlev = analyseLevels(n, col, row, levels);
+    levelptrs = new int[nlev + 1];
+    sortLevels(n, nlev, levels, levelptrs);
+    return nlev;
+}
+
+int analyseLevels(int n, const int *col, const int *row, int *levels) {
+    int p, j, t, nlev = 0;
+//#pragma omp parallel for default(none) shared(n, col, row) private(j, p, t) reduction(max:levels[:n], nlev)
+    for (j = 0; j < n; j++) {
+        for (p = col[j]; p < col[j + 1]; p++) {
+            t = max(levels[j] + 1, levels[row[p]]);
+            nlev = max(nlev, t);
+            levels[row[p]] = t;
+        }
+    }
+    return nlev;
+}
+
+void sortLevels(int n, int nlev, int *levels, int *levelptrs) {
+    int t, j;
+    auto perm = new long long[n]();
+//#pragma omp parallel for default(none) shared(n, levels, perm) private(j)
+    for (j = 0; j < n; j++) {
+        perm[j] = ((long long) j << 32) | levels[j];
+    }
+    sort(perm, perm+n, [](long long a, long long b) {
+        return (int) (a & 0xFFFFFFFF) > (int) (b & 0xFFFFFFFF);
+    });
+
+    for (j = 0; j < nlev; j++) {
+        levelptrs[j] = INT_MAX;
+    }
+//#pragma omp parallel for default(none) shared(n, nlev, levels, t, perm) private(j) reduction(min:levelptrs[:nlev])
+    for (j = 0; j < n; j++) {
+        t = perm[j] & 0xFFFFFFFF;
+        levelptrs[t] = min(levelptrs[t], j);
+        levels[j] = (int) (perm[j] >> 32);
+    }
+    delete[] perm;
+}
+
+int solveSerial(int n, const int *col, const int *row, const double *val, double *b) {
     int p, j;
     if (!col || !row || !b) return 0;
     for (j = 0; j < n; j++) {
@@ -157,58 +193,6 @@ int solve(int n, const int *col, const int *row, const double *val, double *b) {
         }
     }
     return 1;
-}
-
-int analyseDependencies(int n, const int *col, const int *row, int *&d) {
-    int j;
-    d = new int[n];
-#pragma omp parallel for default(none) shared(n, col, row) private(j) reduction(+:d[:n])
-    for (j = 0; j < col[n]; j++) {
-        d[row[j]]++;
-    }
-    return 1;
-}
-
-void createLevelsets(int n, const int *col, const int *row, int *&levels, int *&levelpntrs) {
-    levels = new int[n];
-    int nlev = analyseLevels(n, col, row, levels);
-    sortLevels(n, nlev, levels, levelpntrs);
-}
-
-int analyseLevels(int n, const int *col, const int *row, int *levels) {
-    int p, j, t, nlev = 0;
-#pragma omp parallel for default(none) shared(n, col, row) private(j, p, t) reduction(max:levels[:n], nlev)
-    for (j = 0; j < n; j++) {
-        for (p = col[j]; p < col[j + 1]; p++) {
-            t = max(levels[j] + 1, levels[row[p]]);
-            nlev = max(t, nlev);
-            levels[row[p]] = t;
-        }
-    }
-    return nlev;
-}
-
-void sortLevels(int n, int nlev, int *levels, int *levelpntrs) {
-    int t, j;
-    auto perm = new long long[n];
-#pragma omp parallel for default(none) shared(n, levels, perm) private(j)
-    for (j = 0; j < n; j++) {
-        perm[j] = ((long long) j << 32) | levels[j];
-    }
-    sort(perm, perm+n, [](long long a, long long b) {
-        return (int) (a & 0xFFFFFFFF) > (int) (b & 0xFFFFFFFF);
-    });
-    levelpntrs = new int[nlev + 1];
-    for (j = 0; j < nlev; j++) {
-        levelpntrs[j] = INT_MAX;
-    }
-#pragma omp parallel for default(none) shared(n, nlev, levels, t, perm) private(j) reduction(min:levelpntrs[:nlev])
-    for (j = 0; j < n; j++) {
-        t = perm[j] & 0xFFFFFFFF;
-        levelpntrs[t] = min(levelpntrs[t], j);
-        levels[j] = (int) (perm[j] >> 32);
-    }
-    delete[] perm;
 }
 
 /*

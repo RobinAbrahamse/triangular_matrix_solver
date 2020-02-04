@@ -26,19 +26,17 @@ int main(int argc, char** argv) {
     printf("Time to read dense vector: %fs\n", t2);
 
     auto t3 = omp_get_wtime();
-    auto t = new int[1];
-    analyseDependencies(n, col, row, t);
+    int* a1 = nullptr;
+    int* a2 = nullptr;
+    createLevelsets(n, col, row, a1, a2);
     t3 = omp_get_wtime() - t3;
     printf("Time to analyse dense vector: %fs\n", t3);
-
-    auto t4 = omp_get_wtime();
-    createLevelsets(n, col, row, t, t);
-    t4 = omp_get_wtime() - t4;
-    printf("Time to analyse levels for dense vector: %fs\n", t4);
-    delete[] t;
+    delete[] a1;
+    delete[] a2;
 
     auto t5 = omp_get_wtime();
-    solve(n, col, row, val, b);
+//    solveParallelLevels(n, col, row, val, b);
+    solveParallelFor(n, col, row, val, b);
     t5 = omp_get_wtime() - t5;
     printf("Time to solve for dense vector: %fs\n", t5);
 

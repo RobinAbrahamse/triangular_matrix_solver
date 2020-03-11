@@ -35,8 +35,10 @@ int main(int argc, char** argv) {
     delete[] a2;
 
     auto t5 = omp_get_wtime();
-//    solveParallelLevels(n, col, row, val, b);
-    solveParallelFor(n, col, row, val, b);
+    solveParallelLevels(n, col, row, val, b);
+//    solveParallelTasks(n, col, row, val, b);
+//    solveParallelFor(n, col, row, val, b);
+//    solveSerial(n, col, row, val, b);
     t5 = omp_get_wtime() - t5;
     printf("Time to solve for dense vector: %fs\n", t5);
 

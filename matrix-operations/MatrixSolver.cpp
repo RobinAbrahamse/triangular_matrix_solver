@@ -27,7 +27,7 @@ int solveParallelTasks(int n, const int *col, const int *row, const double *val,
     int p, j;
     auto d_in_degree = new int[n];
     analyseDependencies(n, col, row, d_in_degree);
-    #pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree, j) private(p)
+    #pragma omp parallel default(none) shared(n, col, row, val, b, d_in_degree) private(p, j)
     {
         #pragma omp single nowait
         {
@@ -147,7 +147,6 @@ int createLevelsets(int n, const int *col, const int *row, int *&levels, int *&l
 
 int analyseLevels(int n, const int *col, const int *row, int *levels) {
     int p, j, t, nlev = 0;
-//#pragma omp parallel for default(none) shared(n, col, row) private(j, p, t) reduction(max:levels[:n], nlev)
     for (j = 0; j < n; j++) {
         for (p = col[j]; p < col[j + 1]; p++) {
             t = max(levels[j] + 1, levels[row[p]]);
@@ -155,26 +154,27 @@ int analyseLevels(int n, const int *col, const int *row, int *levels) {
             levels[row[p]] = t;
         }
     }
-    return nlev;
+    return nlev / 2 + 1;
 }
 
 void sortLevels(int n, int nlev, int *levels, int *levelptrs) {
     int t, j;
     auto perm = new long long[n]();
-//#pragma omp parallel for default(none) shared(n, levels, perm) private(j)
+#pragma omp parallel for default(none) shared(n, levels, perm) private(j)
     for (j = 0; j < n; j++) {
-        perm[j] = ((long long) j << 32) | levels[j];
+        perm[j] = ((long long) j << 32) | (levels[j] / 2);
     }
     sort(perm, perm+n, [](long long a, long long b) {
-        return (int) (a & 0xFFFFFFFF) > (int) (b & 0xFFFFFFFF);
+        return (int) (a & 0xFFFFFFFF) < (int) (b & 0xFFFFFFFF);
     });
 
     for (j = 0; j < nlev; j++) {
         levelptrs[j] = INT16_MAX;
     }
-//#pragma omp parallel for default(none) shared(n, nlev, levels, t, perm) private(j) reduction(min:levelptrs[:nlev])
+    levelptrs[nlev] = n;
+#pragma omp parallel for default(none) shared(n, nlev, levels, perm) private(t, j) reduction(min:levelptrs[:nlev])
     for (j = 0; j < n; j++) {
-        t = perm[j] & 0xFFFFFFFF;
+	t = perm[j] & 0xFFFFFFFF;
         levelptrs[t] = min(levelptrs[t], j);
         levels[j] = (int) (perm[j] >> 32);
     }
@@ -191,6 +191,18 @@ int solveSerial(int n, const int *col, const int *row, const double *val, double
                 b[row[p]] -= val[p] * b[j];
             }
         }
+    }
+    return 1;
+}
+
+int solveSerialCSR(int n, const int *row, const int *col, const double *val, double *b) {
+    int p, i;
+    if (!col || !row || !b) return 0;
+    for (i = 0; i < n; i++) {
+        for (p = row[i]; p < row[i+1] - 1; p++) {
+            b[i] -= val[col[p]] * b[i];
+	}
+	b[i] /= val[row[i+1] - 1];
     }
     return 1;
 }

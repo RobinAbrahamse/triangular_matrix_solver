@@ -1,9 +1,13 @@
 #!/bin/bash
 FILE=CMakeCache.txt
-if [ ! -f "$FILE" ]; then
-	cmake CMakeLists.txt
+#if [ ! -f "$FILE" ]; then
+	if [ $# == 0 ]; then
+		cmake -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
+	elif [ $1 == "-D" ]; then
+		cmake -DCMAKE_BUILD_TYPE=Debug CMakeLists.txt
+	fi
 	echo
-fi
+#fi
 if [ ! -d data ]; then
 	mkdir data
 fi

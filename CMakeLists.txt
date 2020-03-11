@@ -1,6 +1,8 @@
 project(triangular_matrix_solver)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -Wextra")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 include_directories(.)
 include_directories(matrix-reading)

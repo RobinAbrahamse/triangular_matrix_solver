@@ -146,15 +146,16 @@ int createLevelsets(int n, const int *col, const int *row, int *&levels, int *&l
 }
 
 int analyseLevels(int n, const int *col, const int *row, int *levels) {
-    int p, j, t, nlev = 0;
+    int p, j, t, l, nlev = 0;
     for (j = 0; j < n; j++) {
+	l = levels[j] + 1;
         for (p = col[j]; p < col[j + 1]; p++) {
-            t = max(levels[j] + 1, levels[row[p]]);
+            t = max(l, levels[row[p]]);
             nlev = max(nlev, t);
             levels[row[p]] = t;
         }
     }
-    return nlev / 2 + 1;
+    return nlev;
 }
 
 void sortLevels(int n, int nlev, int *levels, int *levelptrs) {
@@ -162,7 +163,7 @@ void sortLevels(int n, int nlev, int *levels, int *levelptrs) {
     auto perm = new long long[n]();
 #pragma omp parallel for default(none) shared(n, levels, perm) private(j)
     for (j = 0; j < n; j++) {
-        perm[j] = ((long long) j << 32) | (levels[j] / 2);
+        perm[j] = ((long long) j << 32) | (levels[j]);
     }
     sort(perm, perm+n, [](long long a, long long b) {
         return (int) (a & 0xFFFFFFFF) < (int) (b & 0xFFFFFFFF);

@@ -1,27 +1,36 @@
 #!/bin/bash
-FILE=CMakeCache.txt
-#if [ ! -f "$FILE" ]; then
-	if [ $# == 0 ]; then
-		cmake -DCMAKE_BUILD_TYPE=Release CMakeLists.txt
-	elif [ $1 == "-D" ]; then
-		cmake -DCMAKE_BUILD_TYPE=Debug CMakeLists.txt
-	fi
-	echo
-#fi
-if [ ! -d data ]; then
-	mkdir data
+MATRIX="data/matrix.mtx"
+VECTOR="data/vector.mtx"
+
+if [ "$#" -ge 1 ] && [ "$1" == "-D" ]; then
+	cmake -DCMAKE_BUILD_TYPE=Debug CMakeLists.txt
+else
+	cmake -DCMAKE_BUILD_TYPE=Release CMakeLists.txt -Wno-dev
 fi
-if [ ! -f data/matrix.mtx ] && [ ! -f data/vector.mtx ]; then
-	wget -O data/af_0_k101.tar.gz https://sparse.tamu.edu/MM/Schenk_AFE/af_0_k101.tar.gz
-	tar -xvzf data/af_0_k101.tar.gz -C data
-	rm -r data/af_0_k101.tar.gz
-	mv data/af_0_k101/af_0_k101.mtx data/matrix.mtx
-	mv data/af_0_k101/af_0_k101_b.mtx data/vector.mtx
-	rmdir data/af_0_k101
-	echo
-fi
+
+echo
 make
 echo
 echo
-./triangular_matrix_solver ./data/matrix.mtx ./data/vector.mtx
 
+if [ "$#" -le 1 ]; then
+	if [ ! -d data ]; then
+		mkdir data
+	elif [ ! -f MATRIX ] && [ ! -f VECTOR ]; then
+		wget -O data/af_0_k101.tar.gz https://sparse.tamu.edu/MM/Schenk_AFE/af_0_k101.tar.gz
+		tar -xvzf data/af_0_k101.tar.gz -C data
+		rm -r data/af_0_k101.tar.gz
+		mv data/af_0_k101/af_0_k101.mtx MATRIX
+		mv data/af_0_k101/af_0_k101_b.mtx VECTOR
+		rmdir data/af_0_k101
+		echo
+	fi
+elif [ "$#" -eq 2 ]; then
+	MATRIX="$1"
+	VECTOR="$2"
+elif [ "$#" -eq 3 ]; then
+	MATRIX="$2"
+	VECTOR="$3"
+fi
+
+./triangular_matrix_solver MATRIX VECTOR

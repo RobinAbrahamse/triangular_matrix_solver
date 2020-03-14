@@ -1,5 +1,7 @@
 project(triangular_matrix_solver)
 
+cmake_minimum_required(VERSION 3.10)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -17,7 +19,7 @@ add_executable (
         main.cpp
         matrix-operations/MatrixSolver.cpp
         matrix-operations/MatrixSolver.h
-        matrix-reading/Utils.cpp 
+        matrix-reading/Utils.cpp
         matrix-reading/Utils.h )
 
 target_link_libraries(triangular_matrix_solver PRIVATE OpenMP::OpenMP_CXX)

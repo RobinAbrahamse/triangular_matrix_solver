@@ -117,21 +117,27 @@ int analyseDependencies(int n, const int *col, const int *row, int *&d) {
 
 int solveParallelLevels(int n, const int *col, const int *row, const double *val, double *b) {
     if (!col || !row || !b) return 0;
+    omp_set_num_threads(4);
     int p, j, k, l, nlev;
     int* levels = nullptr;
     int* levelptrs = nullptr;
     nlev = createLevelsets(n, col, row, levels, levelptrs);
+    auto t = omp_get_wtime();
     for (k = 0; k < nlev; k++) {
-//#pragma omp parallel for default(none) shared(n, col, row, val, b, levels, levelptrs, k) private(p, j, l)
+#pragma omp parallel for default(none) shared(n, col, row, val, b, levels, levelptrs, k) private(p, j, l)
         for (l = levelptrs[k]; l < levelptrs[k+1]; l++) {
             j = levels[l];
+            if (k==0&&l==0)
+            printf("# of threads: %d\n", omp_get_num_threads());
+            // printf("%d, %d\n", k, j);
             b[j] /= val[col[j]];
             for (p = col[j] + 1; p < col[j+1]; p++) {
-//                #pragma omp critical
+                #pragma omp atomic
                 b[row[p]] -= val[p] * b[j];
             }
         }
     }
+    printf("Solving time: %fs\n", omp_get_wtime() - t);
     delete[] levels;
     delete[] levelptrs;
     return 1;
@@ -148,7 +154,7 @@ int createLevelsets(int n, const int *col, const int *row, int *&levels, int *&l
 int analyseLevels(int n, const int *col, const int *row, int *levels) {
     int p, j, t, l, nlev = 0;
     for (j = 0; j < n; j++) {
-	l = levels[j] + 1;
+	      l = levels[j] + 1;
         for (p = col[j]; p < col[j + 1]; p++) {
             t = max(l, levels[row[p]]);
             nlev = max(nlev, t);
@@ -163,22 +169,27 @@ void sortLevels(int n, int nlev, int *levels, int *levelptrs) {
     auto perm = new long long[n]();
 #pragma omp parallel for default(none) shared(n, levels, perm) private(j)
     for (j = 0; j < n; j++) {
-        perm[j] = ((long long) j << 32) | (levels[j]);
+        perm[j] = ((long long) j << 32) | (--levels[j]);
     }
     sort(perm, perm+n, [](long long a, long long b) {
         return (int) (a & 0xFFFFFFFF) < (int) (b & 0xFFFFFFFF);
     });
 
-    for (j = 0; j < nlev; j++) {
+    for (j = 1; j < nlev; j++) {
         levelptrs[j] = INT16_MAX;
     }
+    levelptrs[0] = 0;
     levelptrs[nlev] = n;
-#pragma omp parallel for default(none) shared(n, nlev, levels, perm) private(t, j) reduction(min:levelptrs[:nlev])
+    for (j = 1; j < n; j++) {
+      t = perm[j] & 0xFFFFFFFF;
+      if ((perm[j-1] & 0xFFFFFFFF) != t)
+        levelptrs[t] = j;
+    }
+#pragma omp parallel for default(none) shared(n, nlev, levels, perm) private(j)
     for (j = 0; j < n; j++) {
-	t = perm[j] & 0xFFFFFFFF;
-        levelptrs[t] = min(levelptrs[t], j);
         levels[j] = (int) (perm[j] >> 32);
     }
+
     delete[] perm;
 }
 
@@ -202,8 +213,8 @@ int solveSerialCSR(int n, const int *row, const int *col, const double *val, dou
     for (i = 0; i < n; i++) {
         for (p = row[i]; p < row[i+1] - 1; p++) {
             b[i] -= val[col[p]] * b[i];
-	}
-	b[i] /= val[row[i+1] - 1];
+      	}
+      	b[i] /= val[row[i+1] - 1];
     }
     return 1;
 }
@@ -229,7 +240,7 @@ int mult(int n, int *col, int *row, double *val, double *x, double *y) {
         xj = x[j];
         for (p = col[j]; p < col[j + 1]; p++) {
             #pragma omp atomic                  //Atomic instead of reduction because array size (stack overflow)
-                y[row[p]] += val[p] * xj;
+            y[row[p]] += val[p] * xj;
         }
     }
     return (1);
